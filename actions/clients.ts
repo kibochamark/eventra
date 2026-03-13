@@ -16,10 +16,10 @@ async function getBearerToken(): Promise<string> {
 export async function createClient(data: {
   name: string;
   isCorporate?: boolean;
-  email?: string;
-  phone?: string;
-  address?: string;
-  contactPerson?: string;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  contactPerson?: string | null;
 }): Promise<Client> {
   const token = await getBearerToken();
   const res = await fetch(`${API_BASE}/clients`, {
@@ -40,10 +40,10 @@ export async function updateClient(
   data: {
     name?: string;
     isCorporate?: boolean;
-    email?: string;
-    phone?: string;
-    address?: string;
-    contactPerson?: string;
+    email?: string | null;
+    phone?: string | null;
+    address?: string | null;
+    contactPerson?: string | null;
   }
 ): Promise<Client> {
   const token = await getBearerToken();
