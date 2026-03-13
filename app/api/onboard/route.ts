@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Pool } from "pg";
 import { auth } from "@/lib/auth";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+const API_BASE = process.env.API_BASE_URL ?? "http://localhost:4000";
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,13 +12,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // 1. Create tenant
-    const tenantId = crypto.randomUUID();
-    await pool.query(
-      `INSERT INTO "Tenant" (id, "companyName", "isVatRegistered", "vatPercentage", "createdAt")
-       VALUES ($1, $2, $3, $4, NOW())`,
-      [tenantId, companyName, isVatRegistered ?? false, vatPercentage ?? 16.0]
-    );
+    // 1. Create tenant via Eventra Service API
+    const tenantRes = await fetch(`${API_BASE}/api/v1/tenants`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        companyName,
+        ...(isVatRegistered !== undefined && { isVatRegistered }),
+        ...(vatPercentage !== undefined && { vatPercentage }),
+      }),
+    });
+
+    if (!tenantRes.ok) {
+      const e = await tenantRes.json().catch(() => ({}));
+      return NextResponse.json(
+        { error: (e as { message?: string }).message ?? "Failed to create tenant" },
+        { status: tenantRes.status }
+      );
+    }
+
+    const tenant = await tenantRes.json();
+    const tenantId: string = tenant.id;
 
     // 2. Sign up user via Better Auth, passing tenantId + role so they are
     //    included in the INSERT (avoids the NOT NULL constraint violation).
@@ -32,8 +43,6 @@ export async function POST(req: NextRequest) {
     });
 
     if (!signUpResponse.ok) {
-      // Rollback tenant on user-creation failure
-      await pool.query(`DELETE FROM "Tenant" WHERE id = $1`, [tenantId]);
       const errorData = await signUpResponse.json().catch(() => ({}));
       return NextResponse.json(
         { error: (errorData as { message?: string }).message ?? "Failed to create user" },

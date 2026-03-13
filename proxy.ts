@@ -44,7 +44,6 @@ export default async function proxy(req: NextRequest) {
         return nextUrl.pathname.startsWith(route);
     });
 
-    console.log(isApiAuthRoute, isAuthRoute,isPublicRoute, "routes")
 
     if (isApiAuthRoute) {
         return NextResponse.next();
@@ -74,8 +73,6 @@ export default async function proxy(req: NextRequest) {
 
 export const config = {
     matcher: [
-        // "/((?!api|_next/static|_next/image|favicon.ico).*)",
-        "/",
-        "/admin/:path*",
+        "/((?!_next/static|_next/image|favicon.ico|api/auth|api/onboard).*)",
     ],
 };
