@@ -136,7 +136,7 @@ export default function AddQuoteItemSheet({ assets }: { assets: Asset[] }) {
 
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
-      <SheetContent className="sm:max-w-md bg-white border-slate-200 overflow-y-auto">
+      <SheetContent className="sm:max-w-md bg-white border-slate-200 overflow-y-auto p-3">
         <SheetHeader className="pb-4 border-b border-slate-100">
           <SheetTitle className="text-slate-900 text-lg font-bold">Add Line Item</SheetTitle>
           <p className="text-sm text-slate-400">

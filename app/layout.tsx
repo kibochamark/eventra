@@ -18,7 +18,7 @@ const garamond = EB_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: "Aura Events",
+  title: "Rubi Events",
   description: "Premium event rental management platform",
 };
 
@@ -27,7 +27,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${figtree.variable}`}>
-      <body className="antialiased font-sans">
+      <body className="antialiased font-sans" suppressHydrationWarning>
         {children}
         <Toaster richColors position="top-right" />
       </body>

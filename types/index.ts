@@ -2,6 +2,18 @@
 
 export type UserRole = "ADMIN" | "STAFF";
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  banned: boolean;
+  emailVerified: boolean;
+  tenantId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type MovementType = "DISPATCH" | "RETURN" | "REPAIR_IN" | "REPAIR_OUT" | "LOSS";
 
 export type QuoteStatus = "DRAFT" | "PENDING_APPROVAL" | "APPROVED" | "INVOICED" | "CANCELLED";
@@ -70,8 +82,9 @@ export interface Client {
   phone: string | null;
   address: string | null;
   contactPerson: string | null;
+  createdAt?: string;
   _count?: { quotes: number };
-  quotes?: QuoteListItem[];
+  quotes?: { id: string; quoteNumber: string; status: QuoteStatus }[];
 }
 
 export interface QuoteListItem {

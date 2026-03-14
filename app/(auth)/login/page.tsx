@@ -7,7 +7,7 @@ import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Sparkles, CalendarDays, Users, FileText } from "lucide-react";
+import { Loader2, Sparkles, CalendarDays, Users, FileText, Eye, EyeOff } from "lucide-react";
 
 const loginSchema = Yup.object({
   email: Yup.string().email("Invalid email address").required("Email is required"),
@@ -18,6 +18,7 @@ const loginSchema = Yup.object({
 export default function LoginPage() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const formik = useFormik({
     initialValues: {
@@ -34,7 +35,7 @@ export default function LoginPage() {
         {
           email: values.email,
           password: values.password,
-          callbackURL: "/",
+          callbackURL: "/dashboard",
           rememberMe: values.rememberMe,
         },
         {
@@ -193,16 +194,26 @@ export default function LoginPage() {
                     Forgot password?
                   </a>
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  aria-label="Password"
-                  placeholder="••••••••"
-                  aria-invalid={!!(formik.touched.password && formik.errors.password)}
-                  {...formik.getFieldProps("password")}
-                  className="h-auto py-3 px-4 rounded-2xl border-brand/25 bg-white/70 focus-visible:border-brand focus-visible:ring-brand/25"
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    aria-label="Password"
+                    placeholder="••••••••"
+                    aria-invalid={!!(formik.touched.password && formik.errors.password)}
+                    {...formik.getFieldProps("password")}
+                    className="h-auto py-3 px-4 pr-11 rounded-2xl border-brand/25 bg-white/70 focus-visible:border-brand focus-visible:ring-brand/25"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((p) => !p)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
                 {formik.touched.password && formik.errors.password && (
                   <p role="alert" className="text-xs text-red-500 mt-1">{formik.errors.password}</p>
                 )}

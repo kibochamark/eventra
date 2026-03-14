@@ -6,6 +6,7 @@ interface UIState {
   addCategoryDialog: boolean;
   clientSheet: { open: boolean; clientId: string | null };
   addQuoteItemSheet: { open: boolean; quoteId: string | null };
+  userDrawer: { open: boolean; userId: string | null };
 }
 
 const initialState: UIState = {
@@ -14,6 +15,7 @@ const initialState: UIState = {
   addCategoryDialog: false,
   clientSheet: { open: false, clientId: null },
   addQuoteItemSheet: { open: false, quoteId: null },
+  userDrawer: { open: false, userId: null },
 };
 
 const uiSlice = createSlice({
@@ -44,6 +46,12 @@ const uiSlice = createSlice({
     closeAddQuoteItemSheet(state) {
       state.addQuoteItemSheet = { open: false, quoteId: null };
     },
+    openUserDrawer(state, action: PayloadAction<string | null>) {
+      state.userDrawer = { open: true, userId: action.payload };
+    },
+    closeUserDrawer(state) {
+      state.userDrawer = { open: false, userId: null };
+    },
   },
 });
 
@@ -56,6 +64,8 @@ export const {
   closeClientSheet,
   openAddQuoteItemSheet,
   closeAddQuoteItemSheet,
+  openUserDrawer,
+  closeUserDrawer,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

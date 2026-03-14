@@ -1,55 +1,65 @@
 import { Suspense } from "react";
-import { serverFetch } from "@/lib/api";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
 import { Package, FileText, Users, CalendarDays, Clock } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import QuoteStatusBadge from "@/components/quotes/QuoteStatusBadge";
 import type { Asset, QuoteListItem, Client, EventDetail } from "@/types";
 
+const API_BASE = process.env.API_BASE_URL ?? "http://localhost:4000/api/v1";
+
 async function getDashboardStats() {
-  const [assetsRes, quotesRes, clientsRes] = await Promise.all([
-    serverFetch("/assets", { next: { tags: ["assets"], revalidate: 60 } }),
-    serverFetch("/quotes", { next: { tags: ["quotes"], revalidate: 60 } }),
-    serverFetch("/clients", { next: { tags: ["clients"], revalidate: 60 } }),
+  const session = await auth.api.getSession({ headers: await headers() });
+  const token = session?.session.token;
+  const h: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
+  const [assetsRes, quotesRes, clientsRes, eventsRes] = await Promise.all([
+    fetch(`${API_BASE}/assets`,  { headers: h, next: { tags: ["assets"],  revalidate: 60 } }),
+    fetch(`${API_BASE}/quotes`,  { headers: h, next: { tags: ["quotes"],  revalidate: 60 } }),
+    fetch(`${API_BASE}/clients`, { headers: h, next: { tags: ["clients"], revalidate: 60 } }),
+    fetch(`${API_BASE}/events`,  { headers: h, next: { revalidate: 60 } }),
   ]);
-  const assets: Asset[] = assetsRes.ok ? await assetsRes.json() : [];
-  const quotes: QuoteListItem[] = quotesRes.ok ? await quotesRes.json() : [];
-  const clients: Client[] = clientsRes.ok ? await clientsRes.json() : [];
-  let upcomingEvents = 0;
-  const eventsRes = await serverFetch("/events", { next: { revalidate: 60 } });
-  if (eventsRes.ok) {
-    const events: EventDetail[] = await eventsRes.json();
-    upcomingEvents = events.filter((e) => e.status === "UPCOMING").length;
-  } else {
-    upcomingEvents = quotes.filter((q) => q.status === "APPROVED").length;
-  }
+
+  const assets: Asset[]         = assetsRes.ok  ? await assetsRes.json()  : [];
+  const quotes: QuoteListItem[]  = quotesRes.ok  ? await quotesRes.json()  : [];
+  const clients: Client[]        = clientsRes.ok ? await clientsRes.json() : [];
+  const events: EventDetail[]    = eventsRes.ok  ? await eventsRes.json()  : [];
+
+  const upcomingEvents = events.length > 0
+    ? events.filter((e) => e.status === "UPCOMING").length
+    : quotes.filter((q) => q.status === "APPROVED").length;
+
   return {
-    totalAssets: assets.length,
+    totalAssets:   assets.length,
     pendingQuotes: quotes.filter((q) => q.status === "PENDING_APPROVAL").length,
-    activeQuotes: quotes.filter((q) => q.status === "DRAFT" || q.status === "APPROVED").length,
-    totalClients: clients.length,
+    activeQuotes:  quotes.filter((q) => q.status === "DRAFT" || q.status === "APPROVED").length,
+    totalClients:  clients.length,
     upcomingEvents,
-    recentQuotes: quotes.slice(0, 5),
+    recentQuotes:  quotes.slice(0, 5),
   };
 }
 
 const cardConfig = [
-  { key: "totalAssets" as const, label: "Total Assets", icon: Package, href: "/dashboard/assets", accent: "#6366f1" },
-  { key: "pendingQuotes" as const, label: "Pending Approval", icon: Clock, href: "/dashboard/quotes", accent: "#f59e0b" },
-  { key: "activeQuotes" as const, label: "Active Quotes", icon: FileText, href: "/dashboard/quotes", accent: "#10b981" },
-  { key: "upcomingEvents" as const, label: "Upcoming Events", icon: CalendarDays, href: "/dashboard/events", accent: "#ec4899" },
-  { key: "totalClients" as const, label: "Total Clients", icon: Users, href: "/dashboard/clients", accent: "#3b82f6" },
+  { key: "totalAssets"   as const, label: "Total Assets",      icon: Package,      href: "/dashboard/assets",  accent: "#6366f1" },
+  { key: "pendingQuotes" as const, label: "Pending Approval",  icon: Clock,        href: "/dashboard/quotes",  accent: "#f59e0b" },
+  { key: "activeQuotes"  as const, label: "Active Quotes",     icon: FileText,     href: "/dashboard/quotes",  accent: "#10b981" },
+  { key: "upcomingEvents"as const, label: "Upcoming Events",   icon: CalendarDays, href: "/dashboard/events",  accent: "#ec4899" },
+  { key: "totalClients"  as const, label: "Total Clients",     icon: Users,        href: "/dashboard/clients", accent: "#3b82f6" },
 ];
 
 async function StatsSection() {
   const stats = await getDashboardStats();
+
   return (
     <>
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-5">
         {cardConfig.map(({ key, label, icon: Icon, href, accent }) => (
           <Link key={key} href={href} aria-label={`${label}: ${stats[key]}`}>
-            <div className="group rounded-2xl bg-white border border-slate-200 p-5 hover:border-slate-300 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 shadow-sm">
+            <div
+              className="group rounded-2xl bg-white border border-slate-200 p-5 hover:border-slate-300 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 shadow-sm"
+            >
               <div className="flex items-center justify-between mb-5">
                 <div
                   className="flex h-9 w-9 items-center justify-center rounded-xl border"
@@ -76,32 +86,40 @@ async function StatsSection() {
             View all →
           </Link>
         </div>
+
         {stats.recentQuotes.length === 0 ? (
           <div className="px-6 py-12 text-center">
-            <p className="text-sm text-slate-400">No quotes yet.</p>
+            <FileText className="h-8 w-8 text-slate-200 mx-auto mb-3" />
+            <p className="text-sm text-slate-400">No quotes yet. Create your first quote to get started.</p>
+            <Link
+              href="/dashboard/quotes/new"
+              className="inline-flex mt-4 text-xs font-medium text-brand hover:text-brand/80 transition-colors"
+            >
+              Create a quote →
+            </Link>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm" role="table">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50">
+                <tr className="border-b border-slate-100 bg-slate-50/60">
                   {["Quote #", "Client", "Status", "Items"].map((h) => (
                     <th
                       key={h}
-                      className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-widest"
+                      className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-widest"
                     >
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-50">
                 {stats.recentQuotes.map((q) => (
-                  <tr key={q.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={q.id} className="group hover:bg-slate-50/70 transition-colors">
                     <td className="px-6 py-3.5">
                       <Link
                         href={`/dashboard/quotes/${q.id}`}
-                        className="font-medium text-slate-900 hover:text-brand transition-colors"
+                        className="font-mono font-semibold text-slate-800 hover:text-brand transition-colors"
                       >
                         {q.quoteNumber}
                       </Link>
@@ -124,10 +142,10 @@ async function StatsSection() {
         <h2 className="text-sm font-semibold text-slate-900 mb-4">Quick Actions</h2>
         <div className="flex flex-wrap gap-3">
           {[
-            { label: "New Quote", href: "/dashboard/quotes/new" },
-            { label: "Add Client", href: "/dashboard/clients" },
-            { label: "Log Stock Movement", href: "/dashboard/assets" },
-            { label: "View Events", href: "/dashboard/events" },
+            { label: "New Quote",           href: "/dashboard/quotes/new" },
+            { label: "Add Client",          href: "/dashboard/clients" },
+            { label: "Log Stock Movement",  href: "/dashboard/assets" },
+            { label: "View Events",         href: "/dashboard/events" },
           ].map(({ label, href }) => (
             <Link
               key={label}
@@ -158,12 +176,18 @@ function StatsSkeleton() {
         ))}
       </div>
       <div className="rounded-2xl bg-white border border-slate-200 overflow-hidden shadow-sm">
-        <div className="px-6 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-3 w-16" />
         </div>
-        <div className="p-6 space-y-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-10 w-full rounded-xl" />
+        <div className="divide-y divide-slate-50">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-6 py-3.5">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-5 w-20 rounded-full" />
+              <Skeleton className="h-4 w-8 ml-auto" />
+            </div>
           ))}
         </div>
       </div>

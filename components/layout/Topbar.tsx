@@ -7,6 +7,7 @@ import { useRouter, usePathname } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -29,6 +30,8 @@ const routeLabels: Record<string, string> = {
   "/dashboard/quotes/new": "New Quote",
   "/dashboard/clients": "Clients",
   "/dashboard/events": "Events",
+  "/dashboard/users": "Team",
+  "/dashboard/profile": "Profile",
 };
 
 function getBreadcrumb(pathname: string): { parent: string; current: string } {
@@ -152,22 +155,31 @@ export default function Topbar() {
               align="end"
               className="w-52 bg-white border-slate-200 shadow-lg shadow-slate-200/50"
             >
-              <DropdownMenuLabel className="text-xs text-slate-400 font-normal">
-                {session.email}
-              </DropdownMenuLabel>
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="text-xs text-slate-400 font-normal">
+                  {session.email}
+                </DropdownMenuLabel>
+              </DropdownMenuGroup>
               <DropdownMenuSeparator className="bg-slate-100" />
-              <DropdownMenuItem className="gap-2 cursor-pointer text-slate-600 focus:text-slate-900 focus:bg-slate-50">
-                <User className="h-3.5 w-3.5" aria-hidden="true" />
-                Profile
-              </DropdownMenuItem>
+              <DropdownMenuGroup>
+                <DropdownMenuItem
+                  onClick={() => router.push("/dashboard/profile")}
+                  className="gap-2 cursor-pointer text-slate-600 focus:text-slate-900 focus:bg-slate-50"
+                >
+                  <User className="h-3.5 w-3.5" aria-hidden="true" />
+                  Profile
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
               <DropdownMenuSeparator className="bg-slate-100" />
-              <DropdownMenuItem
-                onClick={handleSignOut}
-                className="gap-2 text-red-500 cursor-pointer focus:text-red-600 focus:bg-red-50"
-              >
-                <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
-                Sign out
-              </DropdownMenuItem>
+              <DropdownMenuGroup>
+                <DropdownMenuItem
+                  onClick={handleSignOut}
+                  className="gap-2 text-red-500 cursor-pointer focus:text-red-600 focus:bg-red-50"
+                >
+                  <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -189,7 +201,7 @@ export default function Topbar() {
             className="flex-1 overflow-y-auto px-3 py-5 space-y-0.5"
             aria-label="Mobile navigation"
           >
-            <NavLinks onNavigate={() => setMobileOpen(false)} />
+            <NavLinks role={session.role} onNavigate={() => setMobileOpen(false)} />
           </nav>
         </SheetContent>
       </Sheet>
