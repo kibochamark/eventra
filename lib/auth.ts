@@ -7,8 +7,12 @@ import { nextCookies } from "better-auth/next-js";
 
 export const auth = betterAuth({
     database: new Pool({
-        connectionString:"postgresql://eventra-staging_owner:npg_8nplz6KJrPjb@ep-summer-silence-a44pqjv8-pooler.us-east-1.aws.neon.tech/eventra-staging?sslmode=require&channel_binding=require"
+        connectionString:process.env.DATABASE_URL!,
     }),
+    trustedOrigins: [
+        "http://localhost:3000",
+        "https://eventra-henna.vercel.app",
+    ],
     emailAndPassword: {
         enabled: true,
     },
